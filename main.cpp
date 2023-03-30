@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -12,27 +13,28 @@ const int touchSensorPin = 4; // Replace '4' with the GPIO pin you connected the
 bool ledState = false;
 
 // Store the last state of the touch sensor
-int lastTouchSensorState = HIGH;
+int lastTouchSensorState = LOW;
 
-int x=0;
 
 
 // Initialize the I2C LCD (adjust the address if needed, usually 0x27 or 0x3F)
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD address to 0x27 for a 16 chars and 2 line display
 
 void setup() {
-// Initialize the LED pin as an output
+  // Initialize the LED pin as an output
   pinMode(ledPin, OUTPUT);
 
   // Initialize the touch sensor pin as an input
- pinMode(touchSensorPin, INPUT);
+  pinMode(touchSensorPin, INPUT);
 
   // Initialize the serial communication
   Serial.begin(9600);
-    // Initialize the LCD
-  lcd.init();
 
+  // Initialize the LCD
+  lcd.init();
 }
+// Store the current state of the LCD backlight
+bool lcdBacklightState = false;
 
 void loop() {
   // Read the capacitive touch sensor value
@@ -42,26 +44,38 @@ void loop() {
   Serial.print("Touch Sensor Value: ");
   Serial.println(touchSensorValue);
 
-  if (touchSensorValue == 1) {
-    x += 1;
-     Serial.println(x);
-       // Turn on the backlight
- 
-  lcd.backlight();
-
-     // Print a message on the first line
-  lcd.setCursor(0, 0);
-  lcd.print("Hello, ESP32!");
-  }
-  else {
-    Serial.println("not touching button");
-}
-
   // Check if the touch sensor state has changed from not touched to touched
+  if (lastTouchSensorState == LOW && touchSensorValue == HIGH) {
+    // Toggle the LED state
+    ledState = !ledState;
+
+    // Set the LED to the new state
+    digitalWrite(ledPin, ledState ? HIGH : LOW);
+
+    // Toggle the LCD backlight state
+    lcdBacklightState = !lcdBacklightState;
+
+    if (lcdBacklightState) {
+      // Turn on the LCD backlight
+      lcd.backlight();
+
+      // Print a message on the first line
+      lcd.setCursor(0, 0);
+      lcd.print("testing...");
+    } else {
+      // Turn off the LCD backlight
+      lcd.noBacklight();
+
+      // Clear the LCD
+      lcd.clear();
+    }
+  } else {
+    Serial.println("not touching button");
+  }
 
   // Update the last touch sensor state
   lastTouchSensorState = touchSensorValue;
 
   // Add a small delay to debounce the touch sensor
-  delay(1000);
+  delay(100);
 }
